@@ -4,6 +4,15 @@ import random
 from datetime import datetime
 from PIL import Image
 
+split_level = 1
+# 分割レベル
+# 1.....4分割
+# 2....16分割
+# 3....64分割
+# 4...256分割
+# 5..1024分割
+
+
 imagefilename = "yabaiwayo.jpg"
 
 curdir = os.path.dirname(os.path.abspath(__file__))
@@ -84,14 +93,47 @@ def rand_yabai_image(src):
     return rand_rotate_image(rand_one_image(src))
 
 
+# n分割用
+def rand_split_yabai_image(src, split_level):
+    split_level = split_level - 1
+    if split_level < 0:
+        return src
+    image_tmp = rand_yabai_image(src)
+
+    return rand_split_yabai_image(image_tmp, split_level)
+
+
+# n分割出力用
+def n_split(src, split_level):
+    if len(src) == 1:
+        return src[0]
+    else:
+        image_list_tmp = []
+        for i in range(4 ** (split_level - 2)):
+            j = i * 4
+            im_tmp1 = link_image_h(src[j], src[j + 1])
+            im_tmp2 = link_image_h(src[j + 2], src[j + 3])
+            image_list_tmp.append(link_image_v(im_tmp1, im_tmp2))
+        return n_split(image_list_tmp, split_level - 1)
+
+
 def main():
     try:
+        image_list = []
+        split_num = 4 ** split_level
+        split_roop = 4 ** (split_level - 1)
+        print(str(split_num) + "分割スタート！")
         yabaiwayo_time = datetime.now().strftime('%Y%m%d%H%M%S')
         # イメージファイルを開く
         im = Image.open(curdir + '/' + imagefilename)
-        im_tmp1 = link_image_h(rand_yabai_image(im), rand_yabai_image(im))
-        im_tmp2 = link_image_h(rand_yabai_image(im), rand_yabai_image(im))
-        link_image_v(im_tmp1, im_tmp2).save(resultdir + yabaiwayo_time + '.jpg')
+        for i in range(split_roop):
+            im_tmp1 = link_image_h(rand_split_yabai_image(im, split_level), rand_split_yabai_image(im, split_level))
+            im_tmp2 = link_image_h(rand_split_yabai_image(im, split_level), rand_split_yabai_image(im, split_level))
+            image_list.append(link_image_v(im_tmp1, im_tmp2))
+
+        n_split(image_list, split_level).save(resultdir + str(split_num) + 'x_' + yabaiwayo_time + '.jpg')
+
+        print("End")
 
     except Exception as x:
         print(x)
@@ -99,3 +141,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
